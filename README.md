@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Todo List Exercise
 
 This is a small gradle based multi-project to test your familiarity with Angular frontend in general and Spring boot backend.
@@ -61,4 +60,28 @@ Using the backend API, replace the method definitions at todo.service.ts with ac
 =======
 # CERN-test
 Technical test from CERN. Fullstack app using Angular and Spring Boot
->>>>>>> 38eb47ce01f36be41e1943fbb785c89e2d9276e5
+
+-----------------------
+Implementation summary (what I changed approximatively for each task)
+- Task 1 — Show loading bar only while data is loading
+  - Implemented a loading$ observable in TodoService that emits true while fetching and false when finished.
+  - AppComponent uses <app-progress-bar *ngIf="loading$ | async"> so the bar is shown only during the fetch.
+
+- Task 2 — Implement search
+  - Wired the search input to strongly-typed FormControl<string>.
+  - Used valueChanges with startWith, debounceTime and distinctUntilChanged, combined with the todos stream via combineLatest.
+  - Filtered the todos client-side by the normalized search term.
+
+- Task 3 — Implement delete on click
+  - Hooked the event to onDelete in AppComponent which calls todoService.remove(id).
+  - The remove() call is subscribed to and errors are handled (logged); successful deletes are logged. You can extend error handling as needed.
+  Future Implementation:
+    Error handling  
+    UI validation before deletion
+    Disable button while processing click
+
+- Task 4 — Replace mock service with backend API
+  - Replaced mock implementations in todo.service.ts with HTTP calls to the backend API.
+  - Implemented Spring Boot backend (entity, repository, controller) exposing the endpoints used by the frontend (proxied under /api).
+  - Confirmed frontend proxy (proxy.config.json) routes /api requests to the backend server.
+---------------------------
