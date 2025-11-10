@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Todo List Exercise
 
 This is a small gradle based multi-project to test your familiarity with Angular frontend in general and Spring boot backend.
@@ -57,3 +58,7 @@ Provide the API call endpoints with the help of Spring (entity, repository, cont
 
 #### todo-list-frontend
 Using the backend API, replace the method definitions at todo.service.ts with actual API calls
+=======
+# CERN-test
+Technical test from CERN. Fullstack app using Angular and Spring Boot
+>>>>>>> 38eb47ce01f36be41e1943fbb785c89e2d9276e5
