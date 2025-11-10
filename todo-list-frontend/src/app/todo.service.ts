@@ -1,6 +1,7 @@
-import {Injectable} from '@angular/core';
-import {BehaviorSubject, Observable,of , Subject} from "rxjs";
-import {delay, map, startWith, switchMap} from "rxjs/operators";
+import { Injectable } from "@angular/core";
+import { Observable, Subject, BehaviorSubject, throwError } from "rxjs";
+import { catchError, startWith, switchMap, tap } from "rxjs/operators";
+import { HttpClient } from "@angular/common/http";
 
 export interface Todo {
   id: number;
@@ -8,38 +9,30 @@ export interface Todo {
   priority: 1 | 2 | 3;
 }
 
-let mockData: Todo[] = [
-  { id: 0, task: 'Implement loading - frontend only', priority: 1 },
-  { id: 1, task: 'Implement search - frontend only', priority: 2 },
-  { id: 2, task: 'Implement delete on click - frontend only', priority: 1 },
-  { id: 3, task: 'Replace mock service by integrating backend', priority: 3 },
-];
-
-function removeFromMockData(id: number) {
-  mockData = mockData.filter(todo => todo.id !== id);
-}
-
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class TodoService {
+  private apiUrl = "/api/todos";
   private loadingSubject = new Subject<boolean>();
-  public loading$ = this.loadingSubject.asObservable().pipe(
-    startWith(true)
-  );
+  public loading$ = this.loadingSubject.asObservable();
   private refreshTrigger$ = new BehaviorSubject<void>(undefined);
 
+  constructor(private http: HttpClient) {}
 
- getAll(): Observable<Todo[]> {
-    // 🆕 NOUVEAU: Utiliser switchMap pour re-exécuter à chaque refresh
+  getAll(): Observable<Todo[]> {
     return this.refreshTrigger$.pipe(
+      startWith(undefined),
       switchMap(() => {
         this.loadingSubject.next(true);
-        return of(undefined).pipe(
-          delay(2000),
-          map(() => {
+        return this.http.get<Todo[]>(this.apiUrl).pipe(
+          tap(() => {
             this.loadingSubject.next(false);
-            return [...mockData];  // 🆕 Retourner une COPIE
+          }),
+          catchError((error) => {
+            this.loadingSubject.next(false);
+            console.error("Erreur:", error);
+            return throwError(error);
           })
         );
       })
@@ -47,12 +40,14 @@ export class TodoService {
   }
 
   remove(id: number): Observable<void> {
-    return new Observable<void>(observer => {
-      removeFromMockData(id);
-      observer.next();
-      observer.complete();
-      this.refreshTrigger$.next(undefined);
-
-    })
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      tap(() => {
+        this.refreshTrigger$.next(undefined);
+      }),
+      catchError((error) => {
+        console.error("Erreur lors de la suppression:", error);
+        return throwError(error);
+      })
+    );
   }
 }
