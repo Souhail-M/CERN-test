@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
-import {Observable,of , Subject} from "rxjs";
-import {delay, map, startWith} from "rxjs/operators";
+import {BehaviorSubject, Observable,of , Subject} from "rxjs";
+import {delay, map, startWith, switchMap} from "rxjs/operators";
 
 export interface Todo {
   id: number;
@@ -27,28 +27,32 @@ export class TodoService {
   public loading$ = this.loadingSubject.asObservable().pipe(
     startWith(true)
   );
+  private refreshTrigger$ = new BehaviorSubject<void>(undefined);
 
 
-  getAll(): Observable<Todo[]> {
-    this.loadingSubject.next(true);
-    return of(undefined).pipe(
-      delay(2_000), map(() => {
-      this.loadingSubject.next(false);
-      return mockData;
-    }));
+ getAll(): Observable<Todo[]> {
+    // 🆕 NOUVEAU: Utiliser switchMap pour re-exécuter à chaque refresh
+    return this.refreshTrigger$.pipe(
+      switchMap(() => {
+        this.loadingSubject.next(true);
+        return of(undefined).pipe(
+          delay(2000),
+          map(() => {
+            this.loadingSubject.next(false);
+            return [...mockData];  // 🆕 Retourner une COPIE
+          })
+        );
+      })
+    );
   }
 
   remove(id: number): Observable<void> {
     return new Observable<void>(observer => {
-      setTimeout(() => {
-        if (Math.random() < .8) {
-          removeFromMockData(id);
-          observer.next();
-        } else {
-          observer.error('Failed');
-        }
-        observer.complete();
-      }, 2_000)
+      removeFromMockData(id);
+      observer.next();
+      observer.complete();
+      this.refreshTrigger$.next(undefined);
+
     })
   }
 }

@@ -1,9 +1,8 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnInit, OnDestroy, ChangeDetectionStrategy} from '@angular/core';
 import {Todo, TodoService} from "./todo.service";
-import {combineLatest, Observable, Subscription} from "rxjs";
-import { FormControl } from '@angular/forms';
-import { debounceTime, distinct, distinctUntilChanged, map, startWith } from 'rxjs/operators';
-
+import {Observable, Subscription, combineLatest} from "rxjs";
+import {FormControl} from "@angular/forms";
+import {startWith, debounceTime, distinctUntilChanged, map} from "rxjs/operators";
 
 @Component({
   selector: 'app-root',
@@ -17,7 +16,7 @@ import { debounceTime, distinct, distinctUntilChanged, map, startWith } from 'rx
       <label for="search">Search...</label>
       <input id="search" type="text" [formControl]="searchControl"/>
       <app-progress-bar *ngIf="(loading$ | async)"></app-progress-bar>
-      <app-todo-item *ngFor="let todo of filteredTodos$ | async" [item]="todo"></app-todo-item>
+      <app-todo-item *ngFor="let todo of filteredTodos$ | async" [item]="todo" (delete)="onDelete($event)"></app-todo-item>
     </div>
   `,
   styleUrls: ['app.component.scss']
@@ -29,37 +28,50 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly searchControl = new FormControl('');
   readonly filteredTodos$: Observable<Todo[]>;
 
-  private subscription!: Subscription
+  private subscription!: Subscription;
 
- constructor(todoService: TodoService) {
-      this.todos$ = todoService.getAll();
-      this.loading$ = todoService.loading$;
+  constructor(private todoService: TodoService) {
+    this.todos$ = todoService.getAll();
+    this.loading$ = todoService.loading$;
 
-     this.filteredTodos$ = combineLatest([
-      this.todos$,
-      this.searchControl.valueChanges.pipe(
-        startWith(''),
-        debounceTime(300),
-        distinctUntilChanged()
-      )
-    ]).pipe(
-      map(([todos, searchTerm]: [Todo[], string]) => 
-        todos.filter((todo: Todo) => 
-          todo.task.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
-    );
+
+    
+ this.filteredTodos$ = combineLatest([
+  this.todos$,
+  this.searchControl.valueChanges.pipe(
+    startWith(''),
+    debounceTime(300),
+    distinctUntilChanged()
+  )
+]).pipe(
+  map(([todos, searchTerm]: [Todo[], string]) => 
+    todos.filter(todo => 
+      todo.task.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  )
+);
   }
-  ngOnInit(): void {
+
+
+  ngOnInit() {
     this.subscription = this.todos$.subscribe();
   }
 
-  ngOnDestroy(): void {
-    if(this.subscription){
-      this.subscription.unsubscribe();
-
-    }
+  onDelete(id: number): void {
+    this.todoService.remove(id).subscribe(() => {
+      console.log('Todo deleted:', id);
+      
+    },
+  (error: any) => {
+    console.error(error);
+    
+  }
+  );
   }
 
-   
+  ngOnDestroy(): void {
+    if(this.subscription) {
+      this.subscription.unsubscribe();
+    }
+  }
 }
