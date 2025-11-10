@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
-import {Observable, of} from "rxjs";
-import {delay, map} from "rxjs/operators";
+import {Observable,of , Subject} from "rxjs";
+import {delay, map, startWith} from "rxjs/operators";
 
 export interface Todo {
   id: number;
@@ -23,9 +23,19 @@ function removeFromMockData(id: number) {
   providedIn: 'root'
 })
 export class TodoService {
+  private loadingSubject = new Subject<boolean>();
+  public loading$ = this.loadingSubject.asObservable().pipe(
+    startWith(true)
+  );
+
 
   getAll(): Observable<Todo[]> {
-    return of(undefined).pipe(delay(2_000), map(() => mockData));
+    this.loadingSubject.next(true);
+    return of(undefined).pipe(
+      delay(2_000), map(() => {
+      this.loadingSubject.next(false);
+      return mockData;
+    }));
   }
 
   remove(id: number): Observable<void> {
